@@ -1,7 +1,6 @@
 // script_v2.js - Funcionalidades
 
 document.addEventListener('DOMContentLoaded', () => {
-
     // --- Smooth Scrolling para Links de Navegação --- 
     const navLinks = document.querySelectorAll('#main-nav a[href^="#"], footer a[href^="#"], a.cta-button[href^="#"], a.cta-button-light[href^="#"]');
 
@@ -50,93 +49,64 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Carrossel de Imagens --- 
-    const carousel = document.querySelector('.carousel');
-    if (carousel) {
-        const slides = carousel.querySelectorAll('.carousel-slide');
-        const prevButton = carousel.querySelector('.carousel-control.prev');
-        const nextButton = carousel.querySelector('.carousel-control.next');
-        const indicatorsContainer = carousel.querySelector('.carousel-indicators');
-        let currentSlide = 0;
-        let indicators = [];
-        let autoplayInterval = null; // Variável para guardar o ID do intervalo
+    const slides = document.querySelectorAll('.carousel-slide');
+    const prevButton = document.querySelector('.carousel-control.prev');
+    const nextButton = document.querySelector('.carousel-control.next');
+    const indicators = document.querySelectorAll('.carousel-indicators span');
+    let currentSlide = 0;
+    let autoplayInterval;
 
-        function showSlide(index) {
-            slides.forEach((slide, i) => {
-                // Controla a visibilidade e fade com a classe 'active'
-                slide.classList.toggle('active', i === index);
-            });
-            if (indicators.length > 0) {
-                 indicators.forEach((indicator, i) => {
-                    indicator.classList.toggle('active', i === index);
-                });
-            }
-            currentSlide = index;
-        }
-
-        function nextSlide() {
-            let newIndex = (currentSlide + 1) % slides.length;
-            showSlide(newIndex);
-        }
-
-        function prevSlide() {
-            let newIndex = (currentSlide - 1 + slides.length) % slides.length;
-            showSlide(newIndex);
-        }
-
-        // Função para iniciar o autoplay
-        function startAutoplay() {
-            // Limpa intervalo anterior se existir
-            if (autoplayInterval) clearInterval(autoplayInterval);
-            // Inicia novo intervalo
-            autoplayInterval = setInterval(nextSlide, 5000); // Muda a cada 5 segundos
-        }
-
-        // Função para parar o autoplay (útil ao interagir manualmente)
-        function stopAutoplay() {
-            if (autoplayInterval) clearInterval(autoplayInterval);
-        }
-
-        // Criação dos indicadores
-        if (indicatorsContainer) {
-             slides.forEach((_, i) => {
-                const indicator = document.createElement('span');
-                indicator.addEventListener('click', () => {
-                    stopAutoplay(); // Para autoplay ao clicar no indicador
-                    showSlide(i);
-                    startAutoplay(); // Reinicia autoplay (opcional, pode remover ser removido)
-                });
-                indicatorsContainer.appendChild(indicator);
-                indicators.push(indicator);
-            });
-        }
-       
-
-        // Event Listeners para botões
-        if (nextButton) {
-            nextButton.addEventListener('click', () => {
-                stopAutoplay();
-                nextSlide();
-                startAutoplay(); // Reinicia autoplay
-            });
-        }
-        if (prevButton) {
-             prevButton.addEventListener('click', () => {
-                stopAutoplay();
-                prevSlide();
-                startAutoplay(); // Reinicia autoplay
-            });
-        }
-
-        // Mostrar o primeiro slide inicialmente
-        if (slides.length > 0) {
-            showSlide(0);
-            startAutoplay(); // Inicia o autoplay
-        }
-        
-        // Opcional: Parar autoplay quando o mouse está sobre o carrossel
-        carousel.addEventListener('mouseenter', stopAutoplay);
-        carousel.addEventListener('mouseleave', startAutoplay);
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.remove('active');
+            indicators[i].classList.remove('active');
+        });
+        slides[index].classList.add('active');
+        indicators[index].classList.add('active');
+        currentSlide = index;
     }
+
+    function nextSlide() {
+        currentSlide = (currentSlide + 1) % slides.length;
+        showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+        currentSlide = (currentSlide - 1 + slides.length) % slides.length;
+        showSlide(currentSlide);
+    }
+
+    function startAutoplay() {
+        autoplayInterval = setInterval(nextSlide, 5000); // Muda a cada 5 segundos
+    }
+
+    function stopAutoplay() {
+        clearInterval(autoplayInterval);
+    }
+
+    nextButton.addEventListener('click', () => {
+        stopAutoplay();
+        nextSlide();
+        startAutoplay();
+    });
+
+    prevButton.addEventListener('click', () => {
+        stopAutoplay();
+        prevSlide();
+        startAutoplay();
+    });
+
+    indicators.forEach((indicator, index) => {
+        indicator.addEventListener('click', () => {
+            stopAutoplay();
+            showSlide(index);
+            startAutoplay();
+        });
+    });
+
+    // Inicia o autoplay
+    startAutoplay();
+    showSlide(currentSlide);
 
     // --- Animação da Linha do Tempo ---
     // Usando Intersection Observer para performance
@@ -153,25 +123,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (entry.isIntersecting) {
                 entry.target.style.opacity = '1';
                 entry.target.style.transform = 'translateY(0)';
-                // Opcional: parar de observar após animar uma vez
-                // observer.unobserve(entry.target);
+            } else {
+                entry.target.style.opacity = '0';
+                if (entry.boundingClientRect.top > 0) {
+                    entry.target.style.transform = 'translateY(50px)'; // Saindo por baixo
+                } else {
+                    entry.target.style.transform = 'translateY(-50px)'; // Saindo por cima
+                }
             }
-             else { // Opcional: reverter animação ao sair da tela
-                 entry.target.style.opacity = '0';
-                 // Ajuste a direção do translate Y para o efeito desejado
-                 if (entry.boundingClientRect.top > 0) {
-                     entry.target.style.transform = 'translateY(50px)'; // Saindo por baixo
-                 } else {
-                     entry.target.style.transform = 'translateY(-50px)'; // Saindo por cima
-                 }
-             }
         });
     };
 
     const timelineObserver = new IntersectionObserver(observerCallback, observerOptions);
 
     timelineItems.forEach(item => {
-        // Define estado inicial para animação
         item.style.opacity = '0';
         item.style.transform = 'translateY(50px)';
         item.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
@@ -194,21 +159,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!nome) {
                 isValid = false;
-                // Adicionar feedback visual ao campo, se desejar
             }
-            if (!email) { // Poderia adicionar validação de formato de email
+            if (!email) {
                 isValid = false;
             }
-             if (!mensagem) {
+            if (!mensagem) {
                 isValid = false;
             }
 
             if (isValid) {
-                formStatusV2.textContent = `Obrigado, ${nome}! Sua mensagem foi enviada com sucesso!`;
+                formStatusV2.textContent = `Obrigado, ${nome}! Sua mensagem foi enviada com sucesso✅!`;
                 formStatusV2.style.color = 'green';
                 contactFormV2.reset();
             } else {
-                formStatusV2.textContent = 'Por favor, preencha todos os campos obrigatórios.';
+                formStatusV2.textContent = 'Por favor, preencha todos os campos obrigatórios❗';
                 formStatusV2.style.color = 'red';
             }
 
@@ -220,4 +184,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 }); // Fim do DOMContentLoaded
-
